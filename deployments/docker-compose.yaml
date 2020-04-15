@@ -2,6 +2,7 @@ version: '3'
 services:
   db_mysql:
     image: mysql:5.7
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     container_name: mysql_host
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -9,6 +10,3 @@ services:
       MYSQL_USER: docker
       MYSQL_PASSWORD: docker
       TZ: 'Asia/Tokyo'
-      command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-      ports:
-        - 3306:3306
