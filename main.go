@@ -115,14 +115,8 @@ func userCreateRequest(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the HomePage!\n")
-	fmt.Println("Endpoint Hit: homePage")
-}
-
 func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/", homePage)
 	myRouter.HandleFunc("/user/create", userCreateRequest).Methods("POST")
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }
@@ -130,25 +124,4 @@ func handleRequests() {
 func main() {
 	initMysql()
 	handleRequests()
-	// userCreateResponse := &UserCreateResponse{}
-	// post_handle := func(w http.ResponseWriter, r *http.Request) {
-	// 	// user_name, err := r.GetBody()
-	// 	// if err != nil {
-	// 	// 	log.Printf("%s",err.Error)
-	// 	// }
-	// 	userCreateRequest := &UserCreateRequest{}
-	// 	// err = json.NewDecoder(user_name).Decode(userCreateRequest)
-	// 	err := json.NewDecoder(r.Body).Decode(userCreateRequest)
-	// 	if err != nil {
-	// 		http.Error(w, err.Error(), http.StatusBadRequest)
-	// 		return
-	// 	}
-	// 	user_id := userCreateRequest.Name + "fugafuga"
-	// 	userCreateResponse.Token = "ggggg"
-	// 	// writing operation to sql
-	// 	log.Printf("%s\n%s\n%s", userCreateRequest.Name, user_id, userCreateResponse.Token)
-	// }
-	// // http.HandleFunc("/user/create", post_handle)
-	// http.HandleFunc("/", post_handle)
-	// log.Fatal(http.ListenAndServe(":8080", nil))
 }
