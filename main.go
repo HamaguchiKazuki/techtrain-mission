@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	jwt "github.com/dgrijalva/jwt-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -32,6 +33,7 @@ type UserUpdateRequest struct {
 
 var MYSQL string = "mysql"
 var DB string = "docker:docker@tcp(mysql_host:3306)/game_user"
+var SigningKey = []byte("secret")
 
 func createToken(id int64, userName string) string {
 
@@ -45,13 +47,23 @@ func createToken(id int64, userName string) string {
 
 	// 電子署名
 	// tokenString, _ := token.SignedString([]byte(os.Getenv("SIGNINGKEY")))
-	tokenString, err := token.SignedString([]byte("secret"))
+	tokenString, err := token.SignedString(SigningKey)
 	if err != nil {
 		log.Printf(err.Error())
 	}
 
 	// JWTを返却
 	return tokenString
+}
+
+func AuthMiddleware(next http.Handler) http.Handler {
+	jwtMiddleware := jwtmiddleware.New(jwtmiddleware.Options{
+		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+			return SigningKey, nil
+		},
+		SigningMethod: jwt.SigningMethodHS256,
+	})
+	return jwtMiddleware.Handler(next)
 }
 
 func initMysql() {
@@ -69,7 +81,7 @@ func initMysql() {
 	}
 }
 
-func userCreateRequest(w http.ResponseWriter, r *http.Request) {
+func userCreateHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open(MYSQL, DB)
 	if err != nil {
 		log.Printf(err.Error())
@@ -115,9 +127,30 @@ func userCreateRequest(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func userGetHandler(w http.ResponseWriter, r *http.Request) {
+
+	db, err := sql.Open(MYSQL, DB)
+	if err != nil {
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+	userCreReq := &UserCreateRequest{}
+	err = db.QueryRow("SELECT id, user_name FROM users WHERE id = ?", 2).Scan(&userCreReq.Id, &userCreReq.UserName)
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+
+	log.Println(userCreReq.Id)
+	log.Println(userCreReq.UserName)
+
+}
+
 func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/user/create", userCreateRequest).Methods("POST")
+	myRouter.HandleFunc("/user/create", userCreateHandler).Methods("POST")
+	myRouter.Handle("/user/get", AuthMiddleware(http.HandlerFunc(userGetHandler))).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }
 
