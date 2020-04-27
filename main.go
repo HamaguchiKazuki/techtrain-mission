@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	jwt "github.com/dgrijalva/jwt-go"
@@ -128,6 +129,16 @@ func userCreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func userGetHandler(w http.ResponseWriter, r *http.Request) {
+	tokenHeader := r.Header.Get("Authorization")
+	log.Printf("%s", tokenHeader)
+	splitted := strings.Split(tokenHeader, " ")
+	tokenPart := splitted[1]
+	token, err := jwt.Parse(tokenPart, func(token *jwt.Token) (interface{}, error) {
+		return SigningKey, nil
+	})
+	claims, _ := token.Claims.(jwt.MapClaims)
+	log.Printf("%f", claims["sub"])
+	log.Printf("%s", claims["name"])
 
 	db, err := sql.Open(MYSQL, DB)
 	if err != nil {
@@ -137,7 +148,7 @@ func userGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 	userCreReq := &UserCreateRequest{}
-	err = db.QueryRow("SELECT id, user_name FROM users WHERE id = ?", 2).Scan(&userCreReq.Id, &userCreReq.UserName)
+	err = db.QueryRow("SELECT id, user_name FROM users WHERE id = ?", 3).Scan(&userCreReq.Id, &userCreReq.UserName)
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
